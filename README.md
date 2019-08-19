@@ -1,2 +1,2 @@
 # ParticleSystem
-A particle system with OpenCL/OpenGL interoperation
+42's particle system with OpenCL/OpenGL interoperation
