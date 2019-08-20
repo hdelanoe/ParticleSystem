@@ -1,25 +1,18 @@
 #pragma once
 
 #include <stdio.h>
-#include <stdint.h>
-#include <sys/types.h>
-#include <sys/sysctl.h>
-#include <cmath>
-#include <random>
-#include <algorithm>
-#include <numeric>
-#include <fstream>
-#include <iostream>
-#include <vector>
-#include <string>
-#include <array>
-#include <sstream>
-#include <map>
-#include <fstream>
-#include <cstdlib>
-#include <stdexcept>
-
-#include <CL/cl_gl.h>
+#define _USE_MATH_DEFINES
+#include <math.h>
+#include <string.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <omp.h>
+#include <GL/gl.h>
+#include <GL/glu.h>
+#include "glut.h"
+#include "glui.h"
+#include "CL/cl.h"
+#include "CL/cl_gl.h"
 
 #include <glad/glad.h>
 #include <glfw/glfw3.h>
@@ -41,11 +34,17 @@
 #define H   1080
 #define NP  100
 
+struct xyzw
+{
+    float x, y, z, w;
+}
+
+struct rgba
+{
+    float r, g, b, a;
+}
+
 typedef struct  s_particle {
-    float   x;
-    float   y;
-    float   z;
-    float   vx;
-    float   vy;
-    float   vz;
+    struct xyzw;
+    struct rgba;
 }               particle;
