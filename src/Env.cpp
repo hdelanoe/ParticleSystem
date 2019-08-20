@@ -2,7 +2,7 @@
 
 
 Env::Env(void)
-:time(glfwGetTime())
+: GlobalWorkSize({NUM_PARTICLES, 1, 1}), LocalWorkSize({LOCAL_SIZE, 1, 1}) 
 {
 	try {
 		initGlfwEnvironment();
@@ -21,8 +21,6 @@ Env::Env(void)
 	glEnable(GL_MULTISAMPLE);
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }
-
-Env::~Env(void) {}
 
 void		Env::initGlfwEnvironment(void)
 {
@@ -44,3 +42,77 @@ void		Env::initGlfwWindow(void)
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
 }
+
+void		Env::initGladEnvironment(void)
+{
+	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+		throw GladException();
+
+}
+
+void		Env::initCL(void)
+{
+	cl_int status = clGetPlatformIDs( 1, &Platform, NULL );
+	PrintCLError(status, "clGetPlatformIDs: ");
+	status = clGetDeviceIDs(Platform, CL_DEVICE_TYPE_GPU, 1, &Device, NULL );
+	PrintCLError(status, "clGetDeviceIDs: ");
+	
+	if (!IsCLExtensionSupported("cl_khr_gl_sharing"))
+		throw CLException();
+
+	#ifdef __APPLE__
+		cl_context_properties props[] = 
+		{
+			CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE,
+			(cl_context_properties) kCGLShareGroup,
+			0
+		};
+		cl_context Context = clCreateContext( props, 0, 0, NULL, NULL, &status);
+	#elif __LINUX__
+		cl_context_properties props[] = 
+		{
+			CL_GL_CONTEXT_KHR,	(cl_context_properties) glXGetCurrentContext(),
+			CL_GLX_DISPLAY_KHR,	(cl_context_properties) glXGetCurrentDisplay(),
+			CL_CONTEXT_PLATFORM,(cl_context_properties) Platform,
+			0
+		};
+		cl_context Context = clCreateContext( props, 0, 0, NULL, NULL, &status);
+	#endif
+}
+
+bool		Env::isCLExtensionSupported(const char* extension)
+{
+	if (extension == NULL || extension[0] == '\0')
+		return false;
+	char* where = (char*)strchr(extension, ' ');
+	if (where != NULL)
+		return false;
+	
+	size_t extensionSize;
+	clGetDeviceInfo(Device, CL_DEVICE_EXTENSIONS, 0, NULL, &extensionSize);
+	char* extensions = new char[extensionSize];
+	clGetDeviceInfo(Device, CL_DEVICE_EXTENSIONS, extensionSize, extensions, NULL);
+
+	for(char* start = extensions ;  ; )
+	{
+		where = (char*) strstr((const char *) start, extension);
+		if(where == 0)
+		{
+			delete [] extensions;
+			return false;
+		}
+		char* terminator = where + strlen(extension);
+		if (*terminator == ' ' || *terminator == '\0' ||
+			*terminator == '\r' || *terminator == '\n')
+		{
+			delete [] extensions;
+			return true;
+		}
+		start = terminator;
+	}
+}
+
+const char* Env::GlfwException::what() const throw() { return ("glfw initialization failed"); }
+const char* Env::WindowException::what() const throw() { return ("window initialization failed"); }
+const char* Env::GladException::what() const throw() { return ("glad initialization failed"); }
+const char* Env::CLException::what() const throw() { return ("OpenCL initialization failed"); }
